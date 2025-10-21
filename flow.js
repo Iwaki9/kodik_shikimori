@@ -1,10 +1,9 @@
-console.log('Автоматизация запущена');
+console.log('Автоматизация запущена1');
 
 const waitForButton = () => {
   return new Promise((resolve, reject) => {
     const start = Date.now();
     const check = () => {
-      // Проверяем все кнопки с data-state="closed"
       const buttons = document.querySelectorAll('button[data-state="closed"]');
       console.log('Найдено кнопок с data-state="closed":', buttons.length);
       
@@ -19,7 +18,7 @@ const waitForButton = () => {
 
       if (targetButton) {
         resolve(targetButton);
-      } else if (Date.now() - start > 30000) { // 30 секунд
+      } else if (Date.now() - start > 30000) {
         reject(new Error('Кнопка не найдена за 30 секунд'));
       } else {
         setTimeout(check, 100);
@@ -32,14 +31,21 @@ const waitForButton = () => {
 waitForButton()
   .then(button => {
     console.log('Кнопка найдена:', button.outerHTML);
-    button.click();
-    const clickEvent = new MouseEvent('click', {
-      bubbles: true,
-      cancelable: true,
-      clientX: button.getBoundingClientRect().left + button.getBoundingClientRect().width / 2,
-      clientY: button.getBoundingClientRect().top + button.getBoundingClientRect().height / 2
-    });
-    button.dispatchEvent(clickEvent);
-    console.log('Кнопка "Veo 3.1 - Fast" нажата:', button.outerHTML);
+    setTimeout(() => {
+      button.click();
+      const clickEvent = new MouseEvent('click', {
+        bubbles: true,
+        cancelable: true,
+        clientX: button.getBoundingClientRect().left + button.getBoundingClientRect().width / 2,
+        clientY: button.getBoundingClientRect().top + button.getBoundingClientRect().height / 2
+      });
+      button.dispatchEvent(clickEvent);
+      console.log('Кнопка "Veo 3.1 - Fast" нажата:', button.outerHTML);
+      // Проверяем изменение состояния
+      setTimeout(() => {
+        const state = button.getAttribute('data-state');
+        console.log('Состояние кнопки после клика:', state);
+      }, 500);
+    }, 1000); // Задержка 1 секунда перед кликом
   })
   .catch(err => console.error('Ошибка:', err.message));
