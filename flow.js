@@ -1,4 +1,4 @@
-console.log('Автоматизация запущена1');
+console.log('Автоматизация запущена');
 
 const waitForButton = () => {
   return new Promise((resolve, reject) => {
@@ -32,6 +32,7 @@ waitForButton()
   .then(button => {
     console.log('Кнопка найдена:', button.outerHTML);
     setTimeout(() => {
+      // Выполняем клик
       button.click();
       const clickEvent = new MouseEvent('click', {
         bubbles: true,
@@ -41,11 +42,21 @@ waitForButton()
       });
       button.dispatchEvent(clickEvent);
       console.log('Кнопка "Veo 3.1 - Fast" нажата:', button.outerHTML);
-      // Проверяем изменение состояния
+      // Проверяем состояние и DOM
       setTimeout(() => {
         const state = button.getAttribute('data-state');
         console.log('Состояние кнопки после клика:', state);
-      }, 500);
-    }, 1000); // Задержка 1 секунда перед кликом
+        console.log('HTML кнопки после клика:', button.outerHTML);
+        // Место для следующего шага автоматизации
+        // Например: найти и кликнуть другую кнопку
+        // const nextButton = document.querySelector('.next-step-selector');
+        // if (nextButton) {
+        //   nextButton.click();
+        //   console.log('Кликнута следующая кнопка:', nextButton.outerHTML);
+        // } else {
+        //   console.error('Следующая кнопка не найдена');
+        // }
+      }, 1000);
+    }, 1000);
   })
   .catch(err => console.error('Ошибка:', err.message));
