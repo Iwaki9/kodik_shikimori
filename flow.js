@@ -1,4 +1,4 @@
-console.log('Автоматизация запущена');
+console.log('Автоматизация запущена1');
 
 const waitForElement = (selector, timeout = 30000) => {
   return new Promise((resolve, reject) => {
