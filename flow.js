@@ -18,11 +18,11 @@ const waitForButtonByText = (text, timeout = 30000) => {
   return new Promise((resolve, reject) => {
     const start = Date.now();
     const check = () => {
-      const buttons = Array.from(document.querySelectorAll('button'));
+      const buttons = Array.from(document.querySelectorAll('[role="option"], button'));
       const targetButton = buttons.find(b => b.textContent.includes(text));
-      console.log(`Проверка кнопки с текстом "${text}":`, targetButton ? 'найдена' : 'не найдена');
+      console.log(`Проверка элемента с текстом "${text}":`, targetButton ? 'найден' : 'не найден');
       if (targetButton) resolve(targetButton);
-      else if (Date.now() - start > timeout) reject(new Error(`Кнопка с текстом "${text}" не найдена за ${timeout/1000} секунд`));
+      else if (Date.now() - start > timeout) reject(new Error(`Элемент с текстом "${text}" не найден за ${timeout/1000} секунд`));
       else setTimeout(check, 100);
     };
     check();
@@ -57,6 +57,7 @@ const waitForButtonByText = (text, timeout = 30000) => {
       console.log('Кнопка "add" нажата');
 
       // Шаг 3: Передача одного файла в input на странице
+      await new Promise(resolve => setTimeout(resolve, 1000));
       const pageInput = await waitForElement('input[type="file"]', 30000);
       console.log('Page input найден:', pageInput.outerHTML);
       const dataTransfer = new DataTransfer();
@@ -65,6 +66,19 @@ const waitForButtonByText = (text, timeout = 30000) => {
       pageInput.dispatchEvent(new Event('change', { bubbles: true }));
       console.log('Файл передан в pageInput:', files[i].name);
 
+      // Шаг 3.5: Выбор ориентации "Dọc"
+      await new Promise(resolve => setTimeout(resolve, 5000));
+      const orientationCombo = await waitForElement('button.sc-d6df593a-1.sc-9a21ccc9-0.sc-acb5d8f5-0[role="combobox"]', 30000);
+      console.log('Комбобокс ориентации найден:', orientationCombo.outerHTML);
+      orientationCombo.click();
+      console.log('Комбобокс ориентации открыт');
+      const verticalOption = await waitForButtonByText('Dọc', 10000);
+      console.log('Ориентация Dọc найдена:', verticalOption.outerHTML);
+      verticalOption.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      console.log('Ориентация Dọc выбрана');
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      console.log('Комбобокс после выбора:', orientationCombo.outerHTML);
+
       // Шаг 4: Клик по кнопке "Cắt và lưu"
       const cropButton = await waitForButtonByText('Cắt và lưu', 60000);
       console.log('Кнопка "Cắt và lưu" найдена:', cropButton.outerHTML);
@@ -72,11 +86,10 @@ const waitForButtonByText = (text, timeout = 30000) => {
       console.log('Кнопка "Cắt và lưu" нажата');
 
       // Шаг 5: Ожидание завершения загрузки
-      const loadCompleteButton = await waitForElement('button.sc-d6df593a-1.sc-74578dc8-1[data-state="closed"]', 60000);
-      console.log('Загрузка завершена:', loadCompleteButton.outerHTML);
+      const textarea = await waitForElement('#PINHOLE_TEXT_AREA_ELEMENT_ID', 60000);
+      console.log('Textarea найдена, загрузка завершена:', textarea.outerHTML);
 
       // Шаг 6: Ввод текста в textarea
-      const textarea = await waitForElement('#PINHOLE_TEXT_AREA_ELEMENT_ID');
       console.log('Textarea найдена:', textarea.outerHTML);
       const promptText = 'Tạo video hoạt hình từ hình ảnh đã tải lên';
       Object.defineProperty(textarea, 'value', { value: promptText, writable: true });
