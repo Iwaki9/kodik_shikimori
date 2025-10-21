@@ -1,15 +1,20 @@
 console.log('Автоматизация запущена');
 
-// Функция ожидания кнопки (до 5 секунд)
+// Функция ожидания кнопки (до 10 секунд)
 const waitForButton = () => {
   return new Promise((resolve, reject) => {
     const start = Date.now();
     const check = () => {
+      // Ищем кнопку
       const button = document.querySelector('button[data-state="closed"]');
+      // Логируем все кнопки для отладки
+      const allButtons = document.querySelectorAll('button');
+      console.log('Найдено кнопок:', allButtons.length, 'Текущий data-state:', button ? button.outerHTML : 'нет');
+      
       if (button && button.textContent.includes('Veo 3.1 - Fast')) {
         resolve(button);
-      } else if (Date.now() - start > 5000) {
-        reject(new Error('Кнопка не найдена за 5 секунд'));
+      } else if (Date.now() - start > 10000) { // Увеличиваем до 10 секунд
+        reject(new Error('Кнопка не найдена за 10 секунд'));
       } else {
         setTimeout(check, 100);
       }
@@ -20,11 +25,10 @@ const waitForButton = () => {
 
 waitForButton()
   .then(button => {
-    // Пробуем программный клик
+    // Пробуем разные способы клика
     button.click();
-    // Дополнительно отправляем событие для надёжности
-    const clickEvent = new Event('click', { bubbles: true });
+    const clickEvent = new MouseEvent('click', { bubbles: true, cancelable: true });
     button.dispatchEvent(clickEvent);
-    console.log('Кнопка "Veo 3.1 - Fast" найдена и нажата');
+    console.log('Кнопка "Veo 3.1 - Fast" найдена и нажата:', button.outerHTML);
   })
-  .catch(err => console.error(err.message));
+  .catch(err => console.error('Ошибка:', err.message));
