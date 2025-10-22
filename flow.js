@@ -1,3 +1,24 @@
+const logToWindow = (message, isError = false) => {
+  const logEntry = document.createElement('div');
+  logEntry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+  logEntry.style.color = isError ? '#ff4444' : '#ffffff';
+  logEntry.style.marginBottom = '8px';
+  const logWindow = document.querySelector('#log-content');
+  if (logWindow) {
+    logWindow.appendChild(logEntry);
+    logWindow.scrollTop = logWindow.scrollHeight;
+  }
+  console.log(message); // Сохраняем вывод в консоль
+  if (isError || message.includes('найдена') || message.includes('Текс') || message.includes('скачано') || message.includes('запущена')) {
+    alert(message); // Всплывающее окно для ключевых сообщений
+  }
+};
+
+const errorToWindow = (message) => {
+  logToWindow(message, true);
+  console.error(message);
+};
+
 // Создание окна логов на странице
 const createLogWindow = () => {
   const logDiv = document.createElement('div');
@@ -43,24 +64,6 @@ const createLogWindow = () => {
 };
 
 const logWindow = createLogWindow();
-
-const logToWindow = (message, isError = false) => {
-  const logEntry = document.createElement('div');
-  logEntry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
-  logEntry.style.color = isError ? '#ff4444' : '#ffffff';
-  logEntry.style.marginBottom = '8px';
-  logWindow.appendChild(logEntry);
-  logWindow.scrollTop = logWindow.scrollHeight;
-  console.log(message); // Сохраняем вывод в консоль
-  if (isError || message.includes('найдена') || message.includes('Текс') || message.includes('скачано') || message.includes('запущена')) {
-    alert(message); // Всплывающее окно для ключевых сообщений
-  }
-};
-
-const errorToWindow = (message) => {
-  logToWindow(message, true);
-  console.error(message);
-};
 
 logToWindow('Автоматизация запущена');
 
