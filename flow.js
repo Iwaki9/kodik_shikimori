@@ -8,7 +8,7 @@ const logToWindow = (message, isError = false) => {
     logWindow.appendChild(logEntry);
     logWindow.scrollTop = logWindow.scrollHeight;
   }
-  console.log(message); // Сохраняем вывод в консоль10
+  console.log(message); // Сохраняем вывод в консоль
   if (isError || message.includes('найдена') || message.includes('Текс') || message.includes('скачано') || message.includes('запущена') || message.includes('Прогресс') || message.includes('Видео найдено') || message.includes('Комбобокс режима')) {
     alert(message); // Всплывающее окно для ключевых сообщений
   }
@@ -143,12 +143,27 @@ const waitForProgressOrVideo = (timeout = 240000) => {
     // Шаг 0: Выбор режима "Tạo video từ các khung hình" в комбобоксе
     const modeCombo = await waitForElement('button[role="combobox"].sc-acb5d8f5-0', 30000);
     logToWindow('Комбобокс режима найден: ' + modeCombo.outerHTML);
-    modeCombo.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
-    modeCombo.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-    modeCombo.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));
+    logToWindow('Атрибуты комбобокса: ' + JSON.stringify({
+      dataState: modeCombo.getAttribute('data-state'),
+      disabled: modeCombo.disabled,
+      ariaDisabled: modeCombo.getAttribute('aria-disabled')
+    }));
+    modeCombo.focus();
+    modeCombo.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, clientX: modeCombo.getBoundingClientRect().left + 10, clientY: modeCombo.getBoundingClientRect().top + 10 }));
+    modeCombo.dispatchEvent(new MouseEvent('click', { bubbles: true, clientX: modeCombo.getBoundingClientRect().left + 10, clientY: modeCombo.getBoundingClientRect().top + 10 }));
+    modeCombo.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, clientX: modeCombo.getBoundingClientRect().left + 10, clientY: modeCombo.getBoundingClientRect().top + 10 }));
     logToWindow('Комбобокс режима открыт');
-    await new Promise(resolve => setTimeout(resolve, 10000));
-    const viewport = document.querySelector('div[data-radix-select-viewport]');
+    await new Promise(resolve => setTimeout(resolve, 15000));
+    logToWindow('Атрибут data-state после клика: ' + modeCombo.getAttribute('data-state'));
+    let viewport = document.querySelector('div[data-radix-select-viewport]');
+    if (!viewport) {
+      logToWindow('Viewport комбобокса не найден, повторный клик');
+      modeCombo.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, clientX: modeCombo.getBoundingClientRect().left + 10, clientY: modeCombo.getBoundingClientRect().top + 10 }));
+      modeCombo.dispatchEvent(new MouseEvent('click', { bubbles: true, clientX: modeCombo.getBoundingClientRect().left + 10, clientY: modeCombo.getBoundingClientRect().top + 10 }));
+      modeCombo.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, clientX: modeCombo.getBoundingClientRect().left + 10, clientY: modeCombo.getBoundingClientRect().top + 10 }));
+      await new Promise(resolve => setTimeout(resolve, 15000));
+      viewport = document.querySelector('div[data-radix-select-viewport]');
+    }
     logToWindow('Viewport комбобокса: ' + (viewport ? viewport.innerHTML.substring(0, 200) + '...' : 'не найден'));
     const modeOptions = Array.from(document.querySelectorAll('[role="option"]'));
     logToWindow('Доступные опции в комбобоксе режима: ' + modeOptions.map(opt => opt.textContent.trim()).join(', '));
