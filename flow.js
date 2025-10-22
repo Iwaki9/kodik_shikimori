@@ -8,7 +8,7 @@ const logToWindow = (message, isError = false) => {
     logWindow.appendChild(logEntry);
     logWindow.scrollTop = logWindow.scrollHeight;
   }
-  console.log(message); // Сохраняем вывод в консоль1
+  console.log(message); // Сохраняем вывод в консоль10
   if (isError || message.includes('найдена') || message.includes('Текс') || message.includes('скачано') || message.includes('запущена') || message.includes('Прогресс') || message.includes('Видео найдено') || message.includes('Комбобокс режима')) {
     alert(message); // Всплывающее окно для ключевых сообщений
   }
