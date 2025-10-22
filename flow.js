@@ -9,7 +9,7 @@ const logToWindow = (message, isError = false) => {
     logWindow.scrollTop = logWindow.scrollHeight;
   }
   console.log(message); // Сохраняем вывод в консоль
-  if (isError || message.includes('найдена') || message.includes('Текс') || message.includes('скачано') || message.includes('запущена') || message.includes('Прогресс')) {
+  if (isError || message.includes('найдена') || message.includes('Текс') || message.includes('скачано') || message.includes('запущена') || message.includes('Прогресс') || message.includes('Видео найдено') || message.includes('Комбобокс режима')) {
     alert(message); // Всплывающее окно для ключевых сообщений
   }
 };
@@ -96,30 +96,40 @@ const waitForButtonByText = (text, timeout = 30000) => {
   });
 };
 
-const waitForProgressOrVideo = (timeout = 120000) => {
+const waitForProgressOrVideo = (timeout = 180000) => {
   return new Promise((resolve, reject) => {
     const start = Date.now();
+    let progressSeen = false;
+
     const check = () => {
       const container = document.querySelector('[data-index="1"]');
       if (!container) {
         logToWindow('Контейнер [data-index="1"] не найден');
-        if (Date.now() - start > timeout) reject(new Error('Контейнер [data-index="1"] не найден за 120 секунд'));
-        else setTimeout(check, 100);
+        if (Date.now() - start > timeout) reject(new Error('Контейнер [data-index="1"] не найден за 180 секунд'));
+        else setTimeout(check, 2000);
         return;
       }
+
+      const existingVideo = container.querySelector('video[src*="storage.googleapis.com"]');
+      if (existingVideo && !progressSeen) {
+        logToWindow('Обнаружено старое видео в [data-index="1"], ждём нового');
+      }
+
       const progress = container.querySelector('div.sc-dd6abb21-1.iEQNVH');
       const video = container.querySelector('video[src*="storage.googleapis.com"]');
+
       if (progress) {
+        progressSeen = true;
         logToWindow(`Прогресс генерации: ${progress.textContent}`);
-        setTimeout(check, 1000); // Проверяем каждую секунду
-      } else if (video) {
+        setTimeout(check, 2000); // Проверяем каждые 2 секунды
+      } else if (video && progressSeen) {
         logToWindow('Видео найдено в [data-index="1"]: ' + video.outerHTML);
         resolve(video);
       } else if (Date.now() - start > timeout) {
-        reject(new Error('Видео не найдено в [data-index="1"] за 120 секунд'));
+        reject(new Error('Видео не найдено в [data-index="1"] за 180 секунд'));
       } else {
-        logToWindow('Прогресс-бар исчез, ждём видео в [data-index="1"]');
-        setTimeout(check, 1000);
+        logToWindow('Ожидание прогресс-бара или видео в [data-index="1"]');
+        setTimeout(check, 2000);
       }
     };
     check();
@@ -128,6 +138,22 @@ const waitForProgressOrVideo = (timeout = 120000) => {
 
 (async () => {
   try {
+    // Шаг 0: Выбор режима "Tạo video từ các khung hình" в комбобоксе
+    const modeCombo = await waitForElement('button[role="combobox"].sc-acb5d8f5-0', 30000);
+    logToWindow('Комбобокс режима найден: ' + modeCombo.outerHTML);
+    modeCombo.click();
+    logToWindow('Комбобокс режима открыт');
+    await new Promise(resolve => setTimeout(resolve, 5000));
+    const modeOptions = Array.from(document.querySelectorAll('[role="option"].sc-acb5d8f5-2'));
+    logToWindow('Доступные опции в комбобоксе режима: ' + modeOptions.map(opt => opt.textContent.trim()).join(', '));
+    const frameModeOption = modeOptions.find(opt => opt.textContent.trim().includes('Tạo video từ các khung hình'));
+    if (!frameModeOption) throw new Error('Опция "Tạo video từ các khung hình" не найдена');
+    logToWindow('Опция режима найдена: ' + frameModeOption.outerHTML);
+    frameModeOption.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    logToWindow('Режим выбран: ' + frameModeOption.textContent.trim());
+    await new Promise(resolve => setTimeout(resolve, 3000));
+    logToWindow('Комбобокс режима после выбора: ' + modeCombo.outerHTML);
+
     // Шаг 1: Выбор файлов
     const customInput = document.createElement('input');
     customInput.type = 'file';
@@ -225,7 +251,7 @@ const waitForProgressOrVideo = (timeout = 120000) => {
       logToWindow('Кнопка генерации нажата');
 
       // Шаг 8: Ожидание начала и завершения генерации
-      const videoElement = await waitForProgressOrVideo(120000);
+      const videoElement = await waitForProgressOrVideo(180000);
       logToWindow('Генерация завершена, видео: ' + videoElement.outerHTML);
 
       // Шаг 9: Ожидание завершения генерации (закомментировано)
