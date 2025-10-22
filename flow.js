@@ -1,4 +1,4 @@
-console.log('Автоматизация запущена');
+console.log('Автоматизация запущена3');
 
 const waitForElement = (selector, timeout = 30000) => {
   return new Promise((resolve, reject) => {
@@ -102,24 +102,21 @@ const waitForButtonByText = (text, timeout = 30000) => {
       const promptText = 'Tạo video hoạt hình từ hình ảnh đã tải lên';
       console.log('Текущий текст в textarea:', textarea.value);
       textarea.focus();
-      Object.defineProperty(textarea, 'value', { value: '', writable: true });
+      textarea.value = '';
       for (let char of promptText) {
-        const currentValue = textarea.value;
-        Object.defineProperty(textarea, 'value', { value: currentValue + char, writable: true });
-        textarea.dispatchEvent(new InputEvent('input', { data: char, inputType: 'insertText', bubbles: true }));
-        textarea.dispatchEvent(new Event('beforeinput', { bubbles: true }));
+        textarea.value += char;
+        textarea.dispatchEvent(new InputEvent('input', { data: char, bubbles: true }));
       }
       textarea.dispatchEvent(new Event('change', { bubbles: true }));
-      textarea.dispatchEvent(new Event('compositionend', { bubbles: true }));
+      textarea.dispatchEvent(new Event('beforeinput', { bubbles: true }));
       textarea.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, key: 'Enter' }));
       textarea.dispatchEvent(new KeyboardEvent('keypress', { bubbles: true, key: 'Enter' }));
       textarea.dispatchEvent(new KeyboardEvent('keyup', { bubbles: true, key: 'Enter' }));
       textarea.blur();
       console.log('Текст введён:', textarea.value);
-      console.log('Текст в интерфейсе:', document.querySelector('#PINHOLE_TEXT_AREA_ELEMENT_ID').value);
 
       // Шаг 7: Клик по кнопке генерации
-      await new Promise(resolve => setTimeout(resolve, 10000));
+      await new Promise(resolve => setTimeout(resolve, 7000));
       console.log('Все кнопки с arrow_forward:', Array.from(document.querySelectorAll('button:has(i.google-symbols)')).map(btn => ({ outerHTML: btn.outerHTML, disabled: btn.disabled })));
       console.log('Все кнопки с классом sc-408537d4-2 gdXWm:', Array.from(document.querySelectorAll('button.sc-408537d4-2.gdXWm')).map(btn => ({ outerHTML: btn.outerHTML, disabled: btn.disabled })));
       const generateButton = await waitForElement('button.sc-408537d4-2.gdXWm:not([disabled])', 60000);
