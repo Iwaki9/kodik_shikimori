@@ -8,7 +8,7 @@ const logToWindow = (message, isError = false) => {
     logWindow.appendChild(logEntry);
     logWindow.scrollTop = logWindow.scrollHeight;
   }
-  console.log(message); // Сохраняем вывод в консоль
+  console.log(message); // Сохраняем вывод в консоль12
   if (isError || message.includes('найдена') || message.includes('Текс') || message.includes('скачано') || message.includes('запущена') || message.includes('Прогресс') || message.includes('Видео найдено') || message.includes('Комбобокс режима')) {
     alert(message); // Всплывающее окно для ключевых сообщений
   }
@@ -148,24 +148,40 @@ const waitForProgressOrVideo = (timeout = 240000) => {
       disabled: modeCombo.disabled,
       ariaDisabled: modeCombo.getAttribute('aria-disabled')
     }));
+    const parentContainer = modeCombo.closest('div');
+    logToWindow('Родительский контейнер комбобокса: ' + (parentContainer ? parentContainer.outerHTML.substring(0, 200) + '...' : 'не найден'));
     modeCombo.focus();
     modeCombo.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, clientX: modeCombo.getBoundingClientRect().left + 10, clientY: modeCombo.getBoundingClientRect().top + 10 }));
     modeCombo.dispatchEvent(new MouseEvent('click', { bubbles: true, clientX: modeCombo.getBoundingClientRect().left + 10, clientY: modeCombo.getBoundingClientRect().top + 10 }));
     modeCombo.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, clientX: modeCombo.getBoundingClientRect().left + 10, clientY: modeCombo.getBoundingClientRect().top + 10 }));
-    logToWindow('Комбобокс режима открыт');
-    await new Promise(resolve => setTimeout(resolve, 15000));
+    logToWindow('Комбобокс режима открыт (попытка 1)');
+    await new Promise(resolve => setTimeout(resolve, 20000));
     logToWindow('Атрибут data-state после клика: ' + modeCombo.getAttribute('data-state'));
     let viewport = document.querySelector('div[data-radix-select-viewport]');
     if (!viewport) {
-      logToWindow('Viewport комбобокса не найден, повторный клик');
+      logToWindow('Viewport комбобокса не найден, повторный клик по кнопке');
       modeCombo.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, clientX: modeCombo.getBoundingClientRect().left + 10, clientY: modeCombo.getBoundingClientRect().top + 10 }));
       modeCombo.dispatchEvent(new MouseEvent('click', { bubbles: true, clientX: modeCombo.getBoundingClientRect().left + 10, clientY: modeCombo.getBoundingClientRect().top + 10 }));
       modeCombo.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, clientX: modeCombo.getBoundingClientRect().left + 10, clientY: modeCombo.getBoundingClientRect().top + 10 }));
-      await new Promise(resolve => setTimeout(resolve, 15000));
+      await new Promise(resolve => setTimeout(resolve, 20000));
+      logToWindow('Атрибут data-state после второго клика: ' + modeCombo.getAttribute('data-state'));
       viewport = document.querySelector('div[data-radix-select-viewport]');
+      if (!viewport) {
+        logToWindow('Viewport комбобокса не найден, клик по иконке arrow_drop_down');
+        const arrowIcon = modeCombo.querySelector('div.sc-75901222-3.eQNndT');
+        if (arrowIcon) {
+          arrowIcon.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, clientX: arrowIcon.getBoundingClientRect().left + 5, clientY: arrowIcon.getBoundingClientRect().top + 5 }));
+          arrowIcon.dispatchEvent(new MouseEvent('click', { bubbles: true, clientX: arrowIcon.getBoundingClientRect().left + 5, clientY: arrowIcon.getBoundingClientRect().top + 5 }));
+          arrowIcon.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, clientX: arrowIcon.getBoundingClientRect().left + 5, clientY: arrowIcon.getBoundingClientRect().top + 5 }));
+          logToWindow('Клик по иконке arrow_drop_down выполнен');
+          await new Promise(resolve => setTimeout(resolve, 20000));
+          logToWindow('Атрибут data-state после клика по иконке: ' + modeCombo.getAttribute('data-state'));
+          viewport = document.querySelector('div[data-radix-select-viewport]');
+        }
+      }
     }
     logToWindow('Viewport комбобокса: ' + (viewport ? viewport.innerHTML.substring(0, 200) + '...' : 'не найден'));
-    const modeOptions = Array.from(document.querySelectorAll('[role="option"]'));
+    const modeOptions = Array.from(document.querySelectorAll('[role="option"][data-radix-collection-item]'));
     logToWindow('Доступные опции в комбобоксе режима: ' + modeOptions.map(opt => opt.textContent.trim()).join(', '));
     const frameModeOption = modeOptions.find(opt => opt.textContent.trim().includes('Tạo video từ các khung hình'));
     if (!frameModeOption) throw new Error('Опция "Tạo video từ các khung hình" не найдена');
