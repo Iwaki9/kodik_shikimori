@@ -1,4 +1,4 @@
-console.log('Автоматизация запущена2');
+console.log('Автоматизация запущена');
 
 const waitForElement = (selector, timeout = 30000) => {
   return new Promise((resolve, reject) => {
@@ -18,8 +18,8 @@ const waitForButtonByText = (text, timeout = 30000) => {
   return new Promise((resolve, reject) => {
     const start = Date.now();
     const check = () => {
-      const buttons = Array.from(document.querySelectorAll('[role="option"], button'));
-      const targetButton = buttons.find(b => b.textContent.includes(text));
+      const buttons = Array.from(document.querySelectorAll('button, [role="option"]'));
+      const targetButton = buttons.find(b => b.textContent.trim().includes(text));
       console.log(`Проверка элемента с текстом "${text}":`, targetButton ? 'найден' : 'не найден');
       if (targetButton) resolve(targetButton);
       else if (Date.now() - start > timeout) reject(new Error(`Элемент с текстом "${text}" не найден за ${timeout/1000} секунд`));
@@ -51,7 +51,11 @@ const waitForButtonByText = (text, timeout = 30000) => {
       console.log(`Обработка файла ${i + 1}/${files.length}:`, files[i].name);
 
       // Шаг 2: Клик по кнопке "add"
-      const addButton = await waitForElement('button.sc-d6df593a-1.sc-74578dc8-1');
+      const addIcon = await waitForElement('button i.google-symbols[font-size="1.5rem"]', 60000);
+      console.log('Элемент i.google-symbols найден:', addIcon.outerHTML);
+      console.log('textContent элемента:', addIcon.textContent);
+      if (!addIcon.textContent.includes('add')) throw new Error('Кнопка add не содержит текст "add"');
+      const addButton = addIcon.parentElement;
       console.log('Кнопка "add" найдена:', addButton.outerHTML);
       addButton.click();
       console.log('Кнопка "add" нажата');
@@ -68,14 +72,18 @@ const waitForButtonByText = (text, timeout = 30000) => {
 
       // Шаг 3.5: Выбор ориентации "Dọc"
       await new Promise(resolve => setTimeout(resolve, 5000));
-      const orientationCombo = await waitForElement('button.sc-d6df593a-1.sc-9a21ccc9-0.sc-acb5d8f5-0[role="combobox"]', 30000);
+      const orientationCombo = await waitForElement('button[role="combobox"]:has(i.google-symbols[font-size="1.5rem"])', 30000);
       console.log('Комбобокс ориентации найден:', orientationCombo.outerHTML);
       orientationCombo.click();
       console.log('Комбобокс ориентации открыт');
-      const verticalOption = await waitForButtonByText('Dọc', 10000);
-      console.log('Ориентация Dọc найдена:', verticalOption.outerHTML);
+      await new Promise(resolve => setTimeout(resolve, 5000));
+      const options = Array.from(document.querySelectorAll('[role="option"]'));
+      console.log('Доступные опции в комбобоксе:', options.map(opt => opt.textContent.trim()));
+      const verticalOption = options.find(opt => opt.textContent.trim().includes('Dọc') || opt.textContent.trim().includes('Vertical'));
+      if (!verticalOption) throw new Error('Опция Dọc или Vertical не найдена');
+      console.log('Ориентация найдена:', verticalOption.outerHTML);
       verticalOption.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-      console.log('Ориентация Dọc выбрана');
+      console.log('Ориентация выбрана:', verticalOption.textContent.trim());
       await new Promise(resolve => setTimeout(resolve, 3000));
       console.log('Комбобокс после выбора:', orientationCombo.outerHTML);
 
@@ -88,37 +96,34 @@ const waitForButtonByText = (text, timeout = 30000) => {
       // Шаг 5: Ожидание завершения загрузки
       const textarea = await waitForElement('#PINHOLE_TEXT_AREA_ELEMENT_ID', 60000);
       console.log('Textarea найдена, загрузка завершена:', textarea.outerHTML);
+      console.log('Свойства textarea:', { disabled: textarea.disabled, readOnly: textarea.readOnly });
 
       // Шаг 6: Ввод текста в textarea
-      console.log('Textarea найдена:', textarea.outerHTML);
       const promptText = 'Tạo video hoạt hình từ hình ảnh đã tải lên';
-      Object.defineProperty(textarea, 'value', { value: promptText, writable: true });
-      textarea.dispatchEvent(new Event('input', { bubbles: true }));
-      textarea.dispatchEvent(new KeyboardEvent('keypress', { bubbles: true, key: 'Enter' }));
-      textarea.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, key: 'Enter' }));
-      textarea.dispatchEvent(new KeyboardEvent('keyup', { bubbles: true, key: 'Enter' }));
+      console.log('Текущий текст в textarea:', textarea.value);
+      textarea.focus();
+      Object.defineProperty(textarea, 'value', { value: '', writable: true });
+      for (let char of promptText) {
+        const currentValue = textarea.value;
+        Object.defineProperty(textarea, 'value', { value: currentValue + char, writable: true });
+        textarea.dispatchEvent(new InputEvent('input', { data: char, inputType: 'insertText', bubbles: true }));
+        textarea.dispatchEvent(new Event('beforeinput', { bubbles: true }));
+      }
       textarea.dispatchEvent(new Event('change', { bubbles: true }));
+      textarea.dispatchEvent(new Event('compositionend', { bubbles: true }));
+      textarea.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, key: 'Enter' }));
+      textarea.dispatchEvent(new KeyboardEvent('keypress', { bubbles: true, key: 'Enter' }));
+      textarea.dispatchEvent(new KeyboardEvent('keyup', { bubbles: true, key: 'Enter' }));
       textarea.blur();
       console.log('Текст введён:', textarea.value);
-
-      // Проверяем кнопку генерации
-      const generateButton = await waitForElement('button.sc-d6df593a-1.sc-408537d4-2');
-      console.log('Кнопка генерации:', generateButton.outerHTML);
-      console.log('Кнопка disabled?', generateButton.disabled);
-
-      // Ждём активации кнопки
-      await new Promise((resolve, reject) => {
-        const start = Date.now();
-        const check = () => {
-          if (!generateButton.disabled) resolve();
-          else if (Date.now() - start > 15000) reject(new Error('Кнопка генерации не активировалась за 15 секунд'));
-          else setTimeout(check, 100);
-        };
-        check();
-      });
+      console.log('Текст в интерфейсе:', document.querySelector('#PINHOLE_TEXT_AREA_ELEMENT_ID').value);
 
       // Шаг 7: Клик по кнопке генерации
-      console.log('Кнопка генерации найдена:', generateButton.outerHTML);
+      await new Promise(resolve => setTimeout(resolve, 10000));
+      console.log('Все кнопки с arrow_forward:', Array.from(document.querySelectorAll('button:has(i.google-symbols)')).map(btn => ({ outerHTML: btn.outerHTML, disabled: btn.disabled })));
+      console.log('Все кнопки с классом sc-408537d4-2 gdXWm:', Array.from(document.querySelectorAll('button.sc-408537d4-2.gdXWm')).map(btn => ({ outerHTML: btn.outerHTML, disabled: btn.disabled })));
+      const generateButton = await waitForElement('button.sc-408537d4-2.gdXWm:not([disabled])', 60000);
+      console.log('Кнопка генерации найдена:', generateButton.outerHTML, { disabled: generateButton.disabled });
       generateButton.click();
       console.log('Кнопка генерации нажата');
 
@@ -131,14 +136,15 @@ const waitForButtonByText = (text, timeout = 30000) => {
       console.log('Генерация завершена, видео:', videoElement.outerHTML);
 
       // Шаг 10: Скачивание видео
+      const fileName = files[i].name.split('.').slice(0, -1).join('.');
       const videoUrl = videoElement.src;
       const link = document.createElement('a');
       link.href = videoUrl;
-      link.download = `video_${i + 1}_${files[i].name}.mp4`;
+      link.download = `${fileName}.mp4`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      console.log(`Видео ${i + 1} скачано:`, videoUrl);
+      console.log(`Видео ${i + 1} скачано с именем: ${fileName}.mp4`, videoUrl);
     }
 
     console.log('Все файлы обработаны');
