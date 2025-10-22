@@ -96,7 +96,7 @@ const waitForButtonByText = (text, timeout = 30000) => {
   });
 };
 
-const waitForProgressOrVideo = (timeout = 180000) => {
+const waitForProgressOrVideo = (timeout = 240000) => {
   return new Promise((resolve, reject) => {
     const start = Date.now();
     let progressSeen = false;
@@ -105,10 +105,12 @@ const waitForProgressOrVideo = (timeout = 180000) => {
       const container = document.querySelector('[data-index="1"]');
       if (!container) {
         logToWindow('Контейнер [data-index="1"] не найден');
-        if (Date.now() - start > timeout) reject(new Error('Контейнер [data-index="1"] не найден за 180 секунд'));
+        if (Date.now() - start > timeout) reject(new Error('Контейнер [data-index="1"] не найден за 240 секунд'));
         else setTimeout(check, 2000);
         return;
       }
+
+      logToWindow('HTML [data-index="1"]: ' + container.innerHTML.substring(0, 200) + '...'); // Логируем часть HTML для отладки
 
       const existingVideo = container.querySelector('video[src*="storage.googleapis.com"]');
       if (existingVideo && !progressSeen) {
@@ -126,7 +128,7 @@ const waitForProgressOrVideo = (timeout = 180000) => {
         logToWindow('Видео найдено в [data-index="1"]: ' + video.outerHTML);
         resolve(video);
       } else if (Date.now() - start > timeout) {
-        reject(new Error('Видео не найдено в [data-index="1"] за 180 секунд'));
+        reject(new Error('Видео не найдено в [data-index="1"] за 240 секунд'));
       } else {
         logToWindow('Ожидание прогресс-бара или видео в [data-index="1"]');
         setTimeout(check, 2000);
@@ -141,10 +143,14 @@ const waitForProgressOrVideo = (timeout = 180000) => {
     // Шаг 0: Выбор режима "Tạo video từ các khung hình" в комбобоксе
     const modeCombo = await waitForElement('button[role="combobox"].sc-acb5d8f5-0', 30000);
     logToWindow('Комбобокс режима найден: ' + modeCombo.outerHTML);
-    modeCombo.click();
+    modeCombo.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+    modeCombo.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    modeCombo.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));
     logToWindow('Комбобокс режима открыт');
-    await new Promise(resolve => setTimeout(resolve, 5000));
-    const modeOptions = Array.from(document.querySelectorAll('[role="option"].sc-acb5d8f5-2'));
+    await new Promise(resolve => setTimeout(resolve, 10000));
+    const viewport = document.querySelector('div[data-radix-select-viewport]');
+    logToWindow('Viewport комбобокса: ' + (viewport ? viewport.innerHTML.substring(0, 200) + '...' : 'не найден'));
+    const modeOptions = Array.from(document.querySelectorAll('[role="option"]'));
     logToWindow('Доступные опции в комбобоксе режима: ' + modeOptions.map(opt => opt.textContent.trim()).join(', '));
     const frameModeOption = modeOptions.find(opt => opt.textContent.trim().includes('Tạo video từ các khung hình'));
     if (!frameModeOption) throw new Error('Опция "Tạo video từ các khung hình" не найдена');
@@ -251,7 +257,7 @@ const waitForProgressOrVideo = (timeout = 180000) => {
       logToWindow('Кнопка генерации нажата');
 
       // Шаг 8: Ожидание начала и завершения генерации
-      const videoElement = await waitForProgressOrVideo(180000);
+      const videoElement = await waitForProgressOrVideo(240000);
       logToWindow('Генерация завершена, видео: ' + videoElement.outerHTML);
 
       // Шаг 9: Ожидание завершения генерации (закомментировано)
