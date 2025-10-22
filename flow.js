@@ -9,7 +9,7 @@ const logToWindow = (message, isError = false) => {
     logWindow.scrollTop = logWindow.scrollHeight;
   }
   console.log(message); // Сохраняем вывод в консоль
-  if (isError || message.includes('найдена') || message.includes('Текс') || message.includes('скачано') || message.includes('запущена')) {
+  if (isError || message.includes('найдена') || message.includes('Текс') || message.includes('скачано') || message.includes('запущена') || message.includes('Прогресс')) {
     alert(message); // Всплывающее окно для ключевых сообщений
   }
 };
@@ -91,6 +91,36 @@ const waitForButtonByText = (text, timeout = 30000) => {
       if (targetButton) resolve(targetButton);
       else if (Date.now() - start > timeout) reject(new Error(`Элемент с текстом "${text}" не найден за ${timeout/1000} секунд`));
       else setTimeout(check, 100);
+    };
+    check();
+  });
+};
+
+const waitForProgressOrVideo = (timeout = 120000) => {
+  return new Promise((resolve, reject) => {
+    const start = Date.now();
+    const check = () => {
+      const container = document.querySelector('[data-index="1"]');
+      if (!container) {
+        logToWindow('Контейнер [data-index="1"] не найден');
+        if (Date.now() - start > timeout) reject(new Error('Контейнер [data-index="1"] не найден за 120 секунд'));
+        else setTimeout(check, 100);
+        return;
+      }
+      const progress = container.querySelector('div.sc-dd6abb21-1.iEQNVH');
+      const video = container.querySelector('video[src*="storage.googleapis.com"]');
+      if (progress) {
+        logToWindow(`Прогресс генерации: ${progress.textContent}`);
+        setTimeout(check, 1000); // Проверяем каждую секунду
+      } else if (video) {
+        logToWindow('Видео найдено в [data-index="1"]: ' + video.outerHTML);
+        resolve(video);
+      } else if (Date.now() - start > timeout) {
+        reject(new Error('Видео не найдено в [data-index="1"] за 120 секунд'));
+      } else {
+        logToWindow('Прогресс-бар исчез, ждём видео в [data-index="1"]');
+        setTimeout(check, 1000);
+      }
     };
     check();
   });
@@ -194,15 +224,18 @@ const waitForButtonByText = (text, timeout = 30000) => {
       generateButton.click();
       logToWindow('Кнопка генерации нажата');
 
-      // Шаг 8: Ожидание начала генерации
-      const progressIndicator = await waitForElement('div.sc-dd6abb21-1', 60000);
-      logToWindow('Генерация начата, прогресс: ' + progressIndicator.textContent);
-
-      // Шаг 9: Ожидание завершения генерации
-      const videoElement = await waitForElement('video[src*="storage.googleapis.com"]', 120000);
+      // Шаг 8: Ожидание начала и завершения генерации
+      const videoElement = await waitForProgressOrVideo(120000);
       logToWindow('Генерация завершена, видео: ' + videoElement.outerHTML);
 
-      // Шаг 10: Скачивание видео
+      // Шаг 9: Ожидание завершения генерации (закомментировано)
+      /*
+      const videoElement = await waitForElement('video[src*="storage.googleapis.com"]', 120000);
+      logToWindow('Генерация завершена, видео: ' + videoElement.outerHTML);
+      */
+
+      // Шаг 10: Скачивание видео (закомментировано)
+      /*
       const fileName = files[i].name.split('.').slice(0, -1).join('.');
       const videoUrl = videoElement.src;
       const link = document.createElement('a');
@@ -212,6 +245,7 @@ const waitForButtonByText = (text, timeout = 30000) => {
       link.click();
       document.body.removeChild(link);
       logToWindow(`Видео ${i + 1} скачано с именем: ${fileName}.mp4, URL: ${videoUrl}`);
+      */
     }
 
     logToWindow('Все файлы обработаны');
