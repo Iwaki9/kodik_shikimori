@@ -1,319 +1,136 @@
-const logToWindow = (message, isError = false) => {
+// Универсальные функции логирования и уведомлений
+const logToWindow = (message, level = 'info') => {
+  const colors = {
+    info: '#ffffff',
+    warn: '#ffaa00',
+    error: '#ff4444'
+  };
+  const logContent = document.querySelector('#log-content');
+  if (!logContent) return console.log(message);
+
   const logEntry = document.createElement('div');
   logEntry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
-  logEntry.style.color = isError ? '#ff4444' : '#ffffff';
+  logEntry.style.color = colors[level] || '#fff';
   logEntry.style.marginBottom = '8px';
-  const logWindow = document.querySelector('#log-content');
-  if (logWindow) {
-    logWindow.appendChild(logEntry);
-    logWindow.scrollTop = logWindow.scrollHeight;
-  }
-  console.log(message); // Сохраняем вывод в консоль12
-  if (isError || message.includes('найдена') || message.includes('Текс') || message.includes('скачано') || message.includes('запущена') || message.includes('Прогресс') || message.includes('Видео найдено') || message.includes('Комбобокс режима')) {
-    alert(message); // Всплывающее окно для ключевых сообщений
-  }
+  logContent.appendChild(logEntry);
+  logContent.scrollTop = logContent.scrollHeight;
+
+  console[level === 'error' ? 'error' : 'log'](message);
+
+  if (['error', 'warn'].includes(level)) showNotification(message, level);
 };
 
-const errorToWindow = (message) => {
-  logToWindow(message, true);
-  console.error(message);
+const showNotification = (message, level = 'info') => {
+  const note = document.createElement('div');
+  note.textContent = message;
+  note.style.cssText = `
+    position: fixed; top: 15px; right: 15px;
+    background: ${level === 'error' ? '#c62828' : '#2e7d32'};
+    color: #fff; padding: 10px 16px;
+    font-family: sans-serif;
+    font-size: 14px; border-radius: 5px;
+    box-shadow: 0 0 8px rgba(0,0,0,0.4);
+    opacity: 0; z-index: 100000;
+    transition: opacity 0.3s;
+  `;
+  document.body.appendChild(note);
+  requestAnimationFrame(() => (note.style.opacity = 1));
+  setTimeout(() => note.remove(), 3500);
 };
 
-// Создание окна логов на странице
+// Окно логов
 const createLogWindow = () => {
+  if (document.querySelector('#custom-log-window')) return;
+
   const logDiv = document.createElement('div');
   logDiv.id = 'custom-log-window';
-  logDiv.style.position = 'fixed';
-  logDiv.style.top = '20px';
-  logDiv.style.right = '20px';
-  logDiv.style.width = '450px';
-  logDiv.style.maxHeight = '80vh';
-  logDiv.style.backgroundColor = '#333';
-  logDiv.style.color = '#fff';
-  logDiv.style.padding = '15px';
-  logDiv.style.borderRadius = '8px';
-  logDiv.style.zIndex = '99999';
-  logDiv.style.overflowY = 'auto';
-  logDiv.style.fontFamily = 'monospace';
-  logDiv.style.fontSize = '14px';
-  logDiv.style.border = '2px solid #ff4444';
-  logDiv.style.boxShadow = '0 0 15px rgba(0,0,0,0.7)';
+  logDiv.style = `
+    position: fixed; top: 20px; right: 20px;
+    width: 450px; max-height: 80vh;
+    background: #202020; color: white;
+    padding: 15px; border-radius: 8px;
+    border: 1px solid #555;
+    overflow-y: auto; font-family: monospace;
+    font-size: 13px; z-index: 99999;
+  `;
 
   const clearButton = document.createElement('button');
   clearButton.textContent = 'Очистить логи';
-  clearButton.style.marginBottom = '10px';
-  clearButton.style.padding = '8px 12px';
-  clearButton.style.backgroundColor = '#ff4444';
-  clearButton.style.color = 'white';
-  clearButton.style.border = 'none';
-  clearButton.style.borderRadius = '4px';
-  clearButton.style.cursor = 'pointer';
+  clearButton.style = `
+    margin-bottom: 10px; padding: 8px;
+    background: #555; color: white;
+    border: none; border-radius: 4px;
+    cursor: pointer;
+  `;
   clearButton.onclick = () => {
     logDiv.querySelector('#log-content').innerHTML = '';
-    logToWindow('Логи очищены');
+    logToWindow('Логи очищены', 'info');
   };
 
   const logContent = document.createElement('div');
   logContent.id = 'log-content';
-  logDiv.appendChild(clearButton);
-  logDiv.appendChild(logContent);
+
+  logDiv.append(clearButton, logContent);
   document.body.appendChild(logDiv);
-  logToWindow('Окно логов создано');
-  alert('Окно логов создано в правом верхнем углу страницы');
-  return logContent;
+  logToWindow('Окно логов создано', 'info');
 };
+createLogWindow();
 
-const logWindow = createLogWindow();
+// Улучшенные функции ожидания с MutationObserver
+const waitForElement = (selector, timeout = 30000) =>
+  new Promise((resolve, reject) => {
+    const el = document.querySelector(selector);
+    if (el) return resolve(el);
 
-logToWindow('Автоматизация запущена');
-
-const waitForElement = (selector, timeout = 30000) => {
-  return new Promise((resolve, reject) => {
-    const start = Date.now();
-    const check = () => {
-      const element = document.querySelector(selector);
-      logToWindow(`Проверка селектора "${selector}": ${element ? 'найден' : 'не найден'}`);
-      if (element) resolve(element);
-      else if (Date.now() - start > timeout) reject(new Error(`Элемент "${selector}" не найден за ${timeout/1000} секунд`));
-      else setTimeout(check, 100);
-    };
-    check();
-  });
-};
-
-const waitForButtonByText = (text, timeout = 30000) => {
-  return new Promise((resolve, reject) => {
-    const start = Date.now();
-    const check = () => {
-      const buttons = Array.from(document.querySelectorAll('button, [role="option"]'));
-      const targetButton = buttons.find(b => b.textContent.trim().includes(text));
-      logToWindow(`Проверка элемента с текстом "${text}": ${targetButton ? 'найден' : 'не найден'}`);
-      if (targetButton) resolve(targetButton);
-      else if (Date.now() - start > timeout) reject(new Error(`Элемент с текстом "${text}" не найден за ${timeout/1000} секунд`));
-      else setTimeout(check, 100);
-    };
-    check();
-  });
-};
-
-const waitForProgressOrVideo = (timeout = 240000) => {
-  return new Promise((resolve, reject) => {
-    const start = Date.now();
-    let progressSeen = false;
-
-    const check = () => {
-      const container = document.querySelector('[data-index="1"]');
-      if (!container) {
-        logToWindow('Контейнер [data-index="1"] не найден');
-        if (Date.now() - start > timeout) reject(new Error('Контейнер [data-index="1"] не найден за 240 секунд'));
-        else setTimeout(check, 2000);
-        return;
+    const observer = new MutationObserver(() => {
+      const found = document.querySelector(selector);
+      if (found) {
+        observer.disconnect();
+        resolve(found);
       }
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
 
-      logToWindow('HTML [data-index="1"]: ' + container.innerHTML.substring(0, 200) + '...'); // Логируем часть HTML для отладки
-
-      const existingVideo = container.querySelector('video[src*="storage.googleapis.com"]');
-      if (existingVideo && !progressSeen) {
-        logToWindow('Обнаружено старое видео в [data-index="1"], ждём нового');
-      }
-
-      const progress = container.querySelector('div.sc-dd6abb21-1.iEQNVH');
-      const video = container.querySelector('video[src*="storage.googleapis.com"]');
-
-      if (progress) {
-        progressSeen = true;
-        logToWindow(`Прогресс генерации: ${progress.textContent}`);
-        setTimeout(check, 2000); // Проверяем каждые 2 секунды
-      } else if (video && progressSeen) {
-        logToWindow('Видео найдено в [data-index="1"]: ' + video.outerHTML);
-        resolve(video);
-      } else if (Date.now() - start > timeout) {
-        reject(new Error('Видео не найдено в [data-index="1"] за 240 секунд'));
-      } else {
-        logToWindow('Ожидание прогресс-бара или видео в [data-index="1"]');
-        setTimeout(check, 2000);
-      }
-    };
-    check();
+    setTimeout(() => {
+      observer.disconnect();
+      reject(new Error(`Элемент ${selector} не найден`));
+    }, timeout);
   });
+
+// Универсальная функция симуляции клика
+const simulateClick = (element) => {
+  if (!element) return;
+  ['mousedown', 'click', 'mouseup'].forEach((eventType) =>
+    element.dispatchEvent(new MouseEvent(eventType, { bubbles: true }))
+  );
 };
 
+// Основной поток автоматизации
 (async () => {
   try {
-    // Шаг 0: Выбор режима "Tạo video từ các khung hình" в комбобоксе
-    const modeCombo = await waitForElement('button[role="combobox"].sc-acb5d8f5-0', 30000);
-    logToWindow('Комбобокс режима найден: ' + modeCombo.outerHTML);
-    logToWindow('Атрибуты комбобокса: ' + JSON.stringify({
-      dataState: modeCombo.getAttribute('data-state'),
-      disabled: modeCombo.disabled,
-      ariaDisabled: modeCombo.getAttribute('aria-disabled')
-    }));
-    const parentContainer = modeCombo.closest('div');
-    logToWindow('Родительский контейнер комбобокса: ' + (parentContainer ? parentContainer.outerHTML.substring(0, 200) + '...' : 'не найден'));
-    modeCombo.focus();
-    modeCombo.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, clientX: modeCombo.getBoundingClientRect().left + 10, clientY: modeCombo.getBoundingClientRect().top + 10 }));
-    modeCombo.dispatchEvent(new MouseEvent('click', { bubbles: true, clientX: modeCombo.getBoundingClientRect().left + 10, clientY: modeCombo.getBoundingClientRect().top + 10 }));
-    modeCombo.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, clientX: modeCombo.getBoundingClientRect().left + 10, clientY: modeCombo.getBoundingClientRect().top + 10 }));
-    logToWindow('Комбобокс режима открыт (попытка 1)');
-    await new Promise(resolve => setTimeout(resolve, 20000));
-    logToWindow('Атрибут data-state после клика: ' + modeCombo.getAttribute('data-state'));
-    let viewport = document.querySelector('div[data-radix-select-viewport]');
-    if (!viewport) {
-      logToWindow('Viewport комбобокса не найден, повторный клик по кнопке');
-      modeCombo.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, clientX: modeCombo.getBoundingClientRect().left + 10, clientY: modeCombo.getBoundingClientRect().top + 10 }));
-      modeCombo.dispatchEvent(new MouseEvent('click', { bubbles: true, clientX: modeCombo.getBoundingClientRect().left + 10, clientY: modeCombo.getBoundingClientRect().top + 10 }));
-      modeCombo.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, clientX: modeCombo.getBoundingClientRect().left + 10, clientY: modeCombo.getBoundingClientRect().top + 10 }));
-      await new Promise(resolve => setTimeout(resolve, 20000));
-      logToWindow('Атрибут data-state после второго клика: ' + modeCombo.getAttribute('data-state'));
-      viewport = document.querySelector('div[data-radix-select-viewport]');
-      if (!viewport) {
-        logToWindow('Viewport комбобокса не найден, клик по иконке arrow_drop_down');
-        const arrowIcon = modeCombo.querySelector('div.sc-75901222-3.eQNndT');
-        if (arrowIcon) {
-          arrowIcon.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, clientX: arrowIcon.getBoundingClientRect().left + 5, clientY: arrowIcon.getBoundingClientRect().top + 5 }));
-          arrowIcon.dispatchEvent(new MouseEvent('click', { bubbles: true, clientX: arrowIcon.getBoundingClientRect().left + 5, clientY: arrowIcon.getBoundingClientRect().top + 5 }));
-          arrowIcon.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, clientX: arrowIcon.getBoundingClientRect().left + 5, clientY: arrowIcon.getBoundingClientRect().top + 5 }));
-          logToWindow('Клик по иконке arrow_drop_down выполнен');
-          await new Promise(resolve => setTimeout(resolve, 20000));
-          logToWindow('Атрибут data-state после клика по иконке: ' + modeCombo.getAttribute('data-state'));
-          viewport = document.querySelector('div[data-radix-select-viewport]');
-        }
-      }
-    }
-    logToWindow('Viewport комбобокса: ' + (viewport ? viewport.innerHTML.substring(0, 200) + '...' : 'не найден'));
-    const modeOptions = Array.from(document.querySelectorAll('[role="option"][data-radix-collection-item]'));
-    logToWindow('Доступные опции в комбобоксе режима: ' + modeOptions.map(opt => opt.textContent.trim()).join(', '));
-    const frameModeOption = modeOptions.find(opt => opt.textContent.trim().includes('Tạo video từ các khung hình'));
-    if (!frameModeOption) throw new Error('Опция "Tạo video từ các khung hình" не найдена');
-    logToWindow('Опция режима найдена: ' + frameModeOption.outerHTML);
-    frameModeOption.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-    logToWindow('Режим выбран: ' + frameModeOption.textContent.trim());
-    await new Promise(resolve => setTimeout(resolve, 3000));
-    logToWindow('Комбобокс режима после выбора: ' + modeCombo.outerHTML);
+    logToWindow('Скрипт запущен', 'info');
 
-    // Шаг 1: Выбор файлов
-    const customInput = document.createElement('input');
-    customInput.type = 'file';
-    customInput.accept = '.png,.jpg,.webp,.heic';
-    customInput.multiple = true;
-    document.body.appendChild(customInput);
-    logToWindow('Создан input для выбора файлов.');
-    const files = await new Promise((resolve) => {
-      customInput.addEventListener('change', () => {
-        logToWindow('Файлы выбраны: ' + Array.from(customInput.files).map(f => f.name).join(', '));
-        resolve(Array.from(customInput.files));
-      });
-      customInput.click();
-    });
+    const comboBox = await waitForElement('button[role="combobox"]', 20000);
+    simulateClick(comboBox);
+    logToWindow('Комбобокс найден и открыт', 'info');
 
-    // Цикл по каждому файлу
-    for (let i = 0; i < files.length; i++) {
-      logToWindow(`Обработка файла ${i + 1}/${files.length}: ${files[i].name}`);
+    const options = [...document.querySelectorAll('[role="option"]')];
+    const targetOption = options.find((o) =>
+      o.textContent.includes('Tạo video từ các khung hình')
+    );
+    if (!targetOption) throw new Error('Опция режима не найдена');
+    simulateClick(targetOption);
+    logToWindow('Режим выбран: ' + targetOption.textContent, 'info');
 
-      // Шаг 2: Клик по кнопке "add"
-      const addIcon = await waitForElement('button i.google-symbols[font-size="1.5rem"]', 60000);
-      logToWindow('Элемент i.google-symbols найден: ' + addIcon.outerHTML);
-      logToWindow('textContent элемента: ' + addIcon.textContent);
-      if (!addIcon.textContent.includes('add')) throw new Error('Кнопка add не содержит текст "add"');
-      const addButton = addIcon.parentElement;
-      logToWindow('Кнопка "add" найдена: ' + addButton.outerHTML);
-      addButton.click();
-      logToWindow('Кнопка "add" нажата');
+    // Пример параллельного ожидания
+    const [inputEl, saveBtn] = await Promise.all([
+      waitForElement('input[type="file"]', 15000),
+      waitForElement('button:has(i.google-symbols)', 15000),
+    ]);
 
-      // Шаг 3: Передача одного файла в input на странице
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      const pageInput = await waitForElement('input[type="file"]', 30000);
-      logToWindow('Page input найден: ' + pageInput.outerHTML);
-      const dataTransfer = new DataTransfer();
-      dataTransfer.items.add(files[i]);
-      pageInput.files = dataTransfer.files;
-      pageInput.dispatchEvent(new Event('change', { bubbles: true }));
-      logToWindow('Файл передан в pageInput: ' + files[i].name);
-
-      // Шаг 3.5: Выбор ориентации "Dọc"
-      await new Promise(resolve => setTimeout(resolve, 5000));
-      const orientationCombo = await waitForElement('button[role="combobox"]:has(i.google-symbols[font-size="1.5rem"])', 30000);
-      logToWindow('Комбобокс ориентации найден: ' + orientationCombo.outerHTML);
-      orientationCombo.click();
-      logToWindow('Комбобокс ориентации открыт');
-      await new Promise(resolve => setTimeout(resolve, 5000));
-      const options = Array.from(document.querySelectorAll('[role="option"]'));
-      logToWindow('Доступные опции в комбобоксе: ' + options.map(opt => opt.textContent.trim()).join(', '));
-      const verticalOption = options.find(opt => opt.textContent.trim().includes('Dọc') || opt.textContent.trim().includes('Vertical'));
-      if (!verticalOption) throw new Error('Опция Dọc или Vertical не найдена');
-      logToWindow('Ориентация найдена: ' + verticalOption.outerHTML);
-      verticalOption.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-      logToWindow('Ориентация выбрана: ' + verticalOption.textContent.trim());
-      await new Promise(resolve => setTimeout(resolve, 3000));
-      logToWindow('Комбобокс после выбора: ' + orientationCombo.outerHTML);
-
-      // Шаг 4: Клик по кнопке "Cắt và lưu"
-      const cropButton = await waitForButtonByText('Cắt và lưu', 60000);
-      logToWindow('Кнопка "Cắt và lưu" найдена: ' + cropButton.outerHTML);
-      cropButton.click();
-      logToWindow('Кнопка "Cắt và lưu" нажата');
-
-      // Шаг 5: Ожидание завершения загрузки
-      const textarea = await waitForElement('#PINHOLE_TEXT_AREA_ELEMENT_ID', 60000);
-      logToWindow('Textarea найдена, загрузка завершена: ' + textarea.outerHTML);
-      logToWindow('Свойства textarea: ' + JSON.stringify({ disabled: textarea.disabled, readOnly: textarea.readOnly }));
-
-      // Шаг 6: Ввод текста в textarea
-      const promptText = 'Tạo video hoạt hình từ hình ảnh đã tải lên';
-      logToWindow('Текущий текст в textarea: ' + textarea.value);
-      textarea.focus();
-      Object.defineProperty(textarea, 'value', { value: '', writable: true });
-      for (let char of promptText) {
-        const currentValue = textarea.value;
-        Object.defineProperty(textarea, 'value', { value: currentValue + char, writable: true });
-        textarea.dispatchEvent(new InputEvent('input', { data: char, inputType: 'insertText', bubbles: true }));
-        textarea.dispatchEvent(new Event('beforeinput', { bubbles: true }));
-      }
-      textarea.dispatchEvent(new Event('change', { bubbles: true }));
-      textarea.dispatchEvent(new Event('compositionend', { bubbles: true }));
-      textarea.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, key: 'Enter' }));
-      textarea.dispatchEvent(new KeyboardEvent('keypress', { bubbles: true, key: 'Enter' }));
-      textarea.dispatchEvent(new KeyboardEvent('keyup', { bubbles: true, key: 'Enter' }));
-      textarea.blur();
-      logToWindow('Текст введён: ' + textarea.value);
-      logToWindow('Текст в интерфейсе: ' + document.querySelector('#PINHOLE_TEXT_AREA_ELEMENT_ID').value);
-
-      // Шаг 7: Клик по кнопке генерации
-      await new Promise(resolve => setTimeout(resolve, 10000));
-      logToWindow('Все кнопки с arrow_forward: ' + JSON.stringify(Array.from(document.querySelectorAll('button:has(i.google-symbols)')).map(btn => ({ outerHTML: btn.outerHTML, disabled: btn.disabled }))));
-      logToWindow('Все кнопки с классом sc-408537d4-2 gdXWm: ' + JSON.stringify(Array.from(document.querySelectorAll('button.sc-408537d4-2.gdXWm')).map(btn => ({ outerHTML: btn.outerHTML, disabled: btn.disabled }))));
-      const generateButton = await waitForElement('button.sc-408537d4-2.gdXWm:not([disabled])', 60000);
-      logToWindow('Кнопка генерации найдена: ' + generateButton.outerHTML + ', disabled: ' + generateButton.disabled);
-      generateButton.click();
-      logToWindow('Кнопка генерации нажата');
-
-      // Шаг 8: Ожидание начала и завершения генерации
-      const videoElement = await waitForProgressOrVideo(240000);
-      logToWindow('Генерация завершена, видео: ' + videoElement.outerHTML);
-
-      // Шаг 9: Ожидание завершения генерации (закомментировано)
-      /*
-      const videoElement = await waitForElement('video[src*="storage.googleapis.com"]', 120000);
-      logToWindow('Генерация завершена, видео: ' + videoElement.outerHTML);
-      */
-
-      // Шаг 10: Скачивание видео (закомментировано)
-      /*
-      const fileName = files[i].name.split('.').slice(0, -1).join('.');
-      const videoUrl = videoElement.src;
-      const link = document.createElement('a');
-      link.href = videoUrl;
-      link.download = `${fileName}.mp4`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      logToWindow(`Видео ${i + 1} скачано с именем: ${fileName}.mp4, URL: ${videoUrl}`);
-      */
-    }
-
-    logToWindow('Все файлы обработаны');
-
-  } catch (err) {
-    errorToWindow('Ошибка: ' + err.message);
+    logToWindow('Элементы для загрузки готовы', 'info');
+    simulateClick(saveBtn);
+  } catch (e) {
+    logToWindow(`Ошибка: ${e.message}`, 'error');
   }
 })();
